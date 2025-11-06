@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 import 'services/fall_detection_background_service.dart';
@@ -14,6 +15,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'screens/splash.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth.dart';
+
+final _flutterLocalNotifications = FlutterLocalNotificationsPlugin();
 
 // Background FCM handler
 @pragma('vm:entry-point')
@@ -31,6 +34,24 @@ Future<void> _fcmBackground(RemoteMessage message) async {
   }
 }
 
+Future<void> _bgHandler(RemoteMessage message) async {
+  // Hiển thị local notification khi nhận push ở nền
+  const details = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'falls',
+      'Fall Alerts',
+      importance: Importance.max,
+      priority: Priority.high,
+    ),
+  );
+  await _flutterLocalNotifications.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    message.notification?.title ?? 'Cảnh báo ngã',
+    message.notification?.body ?? 'Phát hiện ngã',
+    details,
+  );
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -40,10 +61,16 @@ void main() async {
 
   // FCM setup
   FirebaseMessaging.onBackgroundMessage(_fcmBackground);
+  FirebaseMessaging.onBackgroundMessage(_bgHandler);
   final messaging = FirebaseMessaging.instance;
 
   // Android 13+ permission & iOS permission
   await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  await _flutterLocalNotifications.initialize(
+    const InitializationSettings(android: androidSettings),
+  );
 
   runApp(const MyApp());
 }
