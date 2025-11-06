@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medication.dart';
 import '../services/medication_service.dart';
-import '../services/notification_service.dart'; // ✅ Import
+import '../services/notification_service.dart';
 import 'medication_form_screen.dart';
 
 class MedicationListScreen extends StatefulWidget {
   const MedicationListScreen({super.key});
-
   @override
   State<MedicationListScreen> createState() => _MedicationListScreenState();
 }
 
 class _MedicationListScreenState extends State<MedicationListScreen> {
   final MedicationService _service = MedicationService();
-  final Set<String> _deleting = {}; // lưu id những item đang xóa
+  final Set<String> _deleting = {};
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +21,6 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
     if (user == null) {
       return const Scaffold(body: Center(child: Text('Bạn chưa đăng nhập')));
     }
-
     return Scaffold(
       appBar: AppBar(title: const Text('Nhắc uống thuốc')),
       body: StreamBuilder<List<Medication>>(
@@ -41,7 +39,6 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
             itemBuilder: (context, i) {
               final m = meds[i];
               final isDeleting = _deleting.contains(m.id);
-
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: ListTile(
@@ -50,75 +47,47 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    '${m.dosage} • ${m.quantity} viên\nLúc: ${m.time.format(context)}',
+                    'Giờ: ${m.time.hour.toString().padLeft(2, '0')}:${m.time.minute.toString().padLeft(2, '0')} • Liều: ${m.dosage} • SL: ${m.quantity}',
                   ),
-                  isThreeLine: true,
-                  trailing: IconButton(
-                    icon: isDeleting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.delete, color: Colors.red),
-                    onPressed: isDeleting
-                        ? null
-                        : () async {
-                            // Lấy scaffold messenger trước khi await (không dùng context sau await trực tiếp)
-                            final scaffold = ScaffoldMessenger.of(context);
-
-                            // Bạn có thể hiện dialog confirm trước khi xóa nếu muốn:
+                  trailing: isDeleting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Xác nhận'),
-                                content: const Text(
-                                  'Bạn có chắc muốn xóa thuốc này?',
-                                ),
+                                content: const Text('Xóa thuốc này?'),
                                 actions: [
                                   TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(ctx).pop(false),
+                                    onPressed: () => Navigator.pop(ctx, false),
                                     child: const Text('Hủy'),
                                   ),
                                   TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(ctx).pop(true),
+                                    onPressed: () => Navigator.pop(ctx, true),
                                     child: const Text('Xóa'),
                                   ),
                                 ],
                               ),
                             );
                             if (confirm != true) return;
-
+                            setState(() => _deleting.add(m.id));
                             try {
-                              setState(() => _deleting.add(m.id));
-
-                              // ✅ Hủy notification trước khi xóa
                               if (m.notificationId != null) {
                                 await NotificationService.cancelNotification(
                                   m.notificationId!,
                                 );
                               }
-
-                              await _service.deleteMedication(user.uid, m.id);
-
-                              // Sau await: kiểm tra mounted trước khi thao tác với context/UI
-                              if (!mounted) return;
-                              scaffold.showSnackBar(
-                                const SnackBar(content: Text('Đã xóa')),
-                              );
-                            } catch (e) {
-                              if (!mounted) return;
-                              scaffold.showSnackBar(
-                                SnackBar(content: Text('Xóa thất bại: $e')),
-                              );
-                            } finally {
-                              if (mounted)
-                                setState(() => _deleting.remove(m.id));
-                            }
+                              await _service.deleteMedication(user.uid, m);
+                            } catch (_) {}
+                            setState(() => _deleting.remove(m.id));
                           },
-                  ),
+                        ),
                 ),
               );
             },

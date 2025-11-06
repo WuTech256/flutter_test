@@ -33,7 +33,6 @@ class _FallStatusScreenState extends State<FallStatusScreen> {
   Widget build(BuildContext context) {
     final isFall = _status.startsWith('⚠️');
     final color = isFall ? Colors.red : Colors.green;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Trạng thái ngã')),
       body: Center(

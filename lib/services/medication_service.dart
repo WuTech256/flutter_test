@@ -1,66 +1,74 @@
 // lib/services/medication_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import '../models/medication.dart';
 
 class MedicationService {
   final _db = FirebaseFirestore.instance;
 
+  DatabaseReference _userRef(String uid) =>
+      FirebaseDatabase.instance.ref('medications/$uid');
+
   /// Thêm thuốc cho userId (UID)
   Future<void> addMedication(Medication med, String uid, int notifId) async {
-    final ref = _db
-        .collection('users')
-        .doc(uid)
-        .collection('medications')
-        .doc();
-    await ref.set({
-      'name': med.name,
-      'dosage': med.dosage,
-      'quantity': med.quantity,
-      'hour': med.time.hour,
-      'minute': med.time.minute,
-      'notificationId': notifId,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final ref = _userRef(uid).push();
+    await ref.set(med.copyWith(notificationId: notifId).toMap());
   }
 
   /// Lấy stream danh sách thuốc theo userId
   Stream<List<Medication>> streamMedications(String userId) {
-    return _db
-        .collection('users')
-        .doc(userId)
-        .collection('medications')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snap) => snap.docs.map((doc) {
-            final d = doc.data();
-            final hour = (d['hour'] is int)
-                ? d['hour'] as int
-                : (d['hour'] is num ? (d['hour'] as num).toInt() : 0);
-            final minute = (d['minute'] is int)
-                ? d['minute'] as int
-                : (d['minute'] is num ? (d['minute'] as num).toInt() : 0);
-            return Medication(
-              id: d['id'] ?? doc.id,
-              name: d['name'] ?? '',
-              dosage: d['dosage'] ?? '',
-              quantity: (d['quantity'] is int)
-                  ? d['quantity'] as int
-                  : (d['quantity'] is num ? (d['quantity'] as num).toInt() : 0),
-              time: TimeOfDay(hour: hour, minute: minute),
-              notificationId: d['notificationId'] as int?, // ✅ Thêm field
-            );
-          }).toList(),
-        );
+    return _userRef(userId).onValue.map((event) {
+      final data = event.snapshot.value;
+      if (data is Map) {
+        return data.entries
+            .map(
+              (e) => Medication.fromMap(
+                e.key,
+                Map<dynamic, dynamic>.from(e.value),
+              ),
+            )
+            .toList();
+      }
+      return <Medication>[];
+    });
   }
 
-  Future<void> deleteMedication(String userId, String medId) async {
-    await _db
-        .collection('users')
-        .doc(userId)
-        .collection('medications')
-        .doc(medId)
-        .delete();
+  Future<List<Medication>> fetchAll(String uid) async {
+    final snap = await _userRef(uid).get();
+    final data = snap.value;
+    if (data is Map) {
+      return data.entries
+          .map(
+            (e) =>
+                Medication.fromMap(e.key, Map<dynamic, dynamic>.from(e.value)),
+          )
+          .toList();
+    }
+    return [];
+  }
+
+  Future<void> deleteMedication(String uid, Medication med) async {
+    await _userRef(uid).child(med.id).remove();
+  }
+}
+
+extension on Medication {
+  Medication copyWith({
+    String? id,
+    String? name,
+    String? dosage,
+    int? quantity,
+    TimeOfDay? time,
+    int? notificationId,
+  }) {
+    return Medication(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      dosage: dosage ?? this.dosage,
+      quantity: quantity ?? this.quantity,
+      time: time ?? this.time,
+      notificationId: notificationId ?? this.notificationId,
+    );
   }
 }

@@ -1,12 +1,12 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'dart:developer';
 
 class NotificationService {
   NotificationService._();
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   static bool _inited = false;
-  static int _autoId = 1;
 
   static Future<void> init() async {
     if (_inited) return;
@@ -17,66 +17,54 @@ class NotificationService {
       iOS: iosInit,
     );
     await _plugin.initialize(initSettings);
+
     final androidImpl = _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
     await androidImpl?.requestNotificationsPermission();
+
+    // Tạo channel nếu cần
+    await androidImpl?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'medication_channel',
+        'Medication Reminders',
+        description: 'Nhắc uống thuốc hàng ngày',
+        importance: Importance.high,
+      ),
+    );
+    await androidImpl?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'fall_detection_channel',
+        'Fall Alerts',
+        description: 'Cảnh báo ngã',
+        importance: Importance.high,
+      ),
+    );
+
     _inited = true;
   }
 
   static Future<void> showInstantNotification({
     required String title,
     required String body,
-    int? id,
+    int id = 0,
   }) async {
-    final notifId = id ?? _autoId++;
     const androidDetails = AndroidNotificationDetails(
-      'default_channel',
-      'General',
+      'fall_detection_channel',
+      'Fall Alerts',
       importance: Importance.high,
       priority: Priority.high,
     );
     const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    await _plugin.show(notifId, title, body, details);
-  }
-
-  static Future<int> scheduleAfterSeconds({
-    required String title,
-    required String body,
-    required int seconds,
-    int? id,
-  }) async {
-    final notifId = id ?? _autoId++;
-    final scheduled = tz.TZDateTime.now(
-      tz.local,
-    ).add(Duration(seconds: seconds));
-    const androidDetails = AndroidNotificationDetails(
-      'default_channel',
-      'General',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const iosDetails = DarwinNotificationDetails();
-    await _plugin.zonedSchedule(
-      notifId,
+    await _plugin.show(
+      id,
       title,
       body,
-      scheduled,
       const NotificationDetails(android: androidDetails, iOS: iosDetails),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: null,
     );
-    return notifId;
   }
 
-  // --- Thêm lịch nhắc uống thuốc hàng ngày ---
   static Future<int> scheduleDailyMedication({
     required int id,
     required String title,
@@ -96,6 +84,7 @@ class NotificationService {
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    log('[MedicationSchedule] id=$id -> $scheduled');
     const androidDetails = AndroidNotificationDetails(
       'medication_channel',
       'Medication Reminders',
@@ -109,19 +98,14 @@ class NotificationService {
       body,
       scheduled,
       const NotificationDetails(android: androidDetails, iOS: iosDetails),
-      androidAllowWhileIdle: true,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // lặp mỗi ngày
+      matchDateTimeComponents: DateTimeComponents.time,
     );
     return id;
   }
 
-  static Future<void> cancelNotification(int id) async {
-    await _plugin.cancel(id);
-  }
-
-  static Future<void> cancelAll() async {
-    await _plugin.cancelAll();
-  }
+  static Future<void> cancelNotification(int id) => _plugin.cancel(id);
+  static Future<void> cancelAll() => _plugin.cancelAll();
 }

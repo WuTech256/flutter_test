@@ -49,6 +49,7 @@ dependencies:
   flutter_foreground_task: ^6.1.2
   flutter_vector_icons: ^2.0.0
   flutter_background_service: ^5.0.5
+  firebase_messaging: ^16.0.4
 
 dev_dependencies:
   flutter_test:

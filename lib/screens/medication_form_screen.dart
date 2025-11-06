@@ -1,16 +1,12 @@
 // lib/screens/medication_form_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:timezone/timezone.dart' as tz;
-
 import '../models/medication.dart';
 import '../services/medication_service.dart';
-// nếu bạn đã có NotificationService, import nó; nếu không, comment dòng kia
 import '../services/notification_service.dart';
 
 class MedicationFormScreen extends StatefulWidget {
   const MedicationFormScreen({super.key});
-
   @override
   State<MedicationFormScreen> createState() => _MedicationFormScreenState();
 }
@@ -82,57 +78,56 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
       appBar: AppBar(title: const Text('Thêm thuốc')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Form(
-              key: _formKey,
-              child: Column(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _name,
+                decoration: const InputDecoration(labelText: 'Tên thuốc'),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Nhập tên' : null,
+              ),
+              TextFormField(
+                controller: _dosage,
+                decoration: const InputDecoration(labelText: 'Liều dùng'),
+              ),
+              TextFormField(
+                controller: _quantity,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Số lượng'),
+              ),
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  TextFormField(
-                    controller: _name,
-                    decoration: const InputDecoration(labelText: 'Tên thuốc'),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Nhập tên thuốc'
-                        : null,
+                  Text(
+                    _time == null
+                        ? 'Chưa chọn giờ'
+                        : 'Giờ: ${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
                   ),
-                  TextFormField(
-                    controller: _dosage,
-                    decoration: const InputDecoration(
-                      labelText: 'Liều lượng (ví dụ 500mg)',
-                    ),
-                  ),
-                  TextFormField(
-                    controller: _quantity,
-                    decoration: const InputDecoration(labelText: 'Số lượng'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
+                  const Spacer(),
+                  TextButton(
                     onPressed: () async {
+                      final now = TimeOfDay.now();
                       final picked = await showTimePicker(
                         context: context,
-                        initialTime: TimeOfDay.now(),
+                        initialTime: now,
                       );
                       if (picked != null) setState(() => _time = picked);
                     },
-                    icon: const Icon(Icons.access_time),
-                    label: Text(
-                      _time == null
-                          ? 'Chọn giờ uống'
-                          : 'Uống lúc ${_time!.format(context)}',
-                    ),
+                    child: const Text('Chọn giờ'),
                   ),
                 ],
               ),
-            ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const CircularProgressIndicator()
-                  : const Text('Lưu'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const CircularProgressIndicator()
+                    : const Text('Lưu'),
+              ),
+            ],
+          ),
         ),
       ),
     );
