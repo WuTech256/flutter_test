@@ -36,7 +36,9 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     if (!_formKey.currentState!.validate() || _time == null) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập')));
       return;
     }
 
@@ -51,26 +53,27 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     );
 
     try {
-      await _service.addMedication(med, user.uid);
+      final notifId = DateTime.now().millisecondsSinceEpoch % 2147483647;
 
-      // optional: schedule local notification if you have NotificationService
-      try {
-        final now = DateTime.now();
-        final notifTime = DateTime(now.year, now.month, now.day, _time!.hour, _time!.minute);
-        final tzDate = tz.TZDateTime.from(notifTime, tz.local);
-        await NotificationService.scheduleNotification(
-          id: DateTime.now().millisecondsSinceEpoch,
-          title: 'Đến giờ uống thuốc',
-          body: '${med.name} • ${med.dosage}',
-          scheduledDate: tzDate,
-        );
-      } catch (_) { /* nếu không có NotificationService thì bỏ qua */ }
+      // ✅ Truyền notificationId vào service
+      await _service.addMedication(med, user.uid, notifId);
+
+      // Lịch hàng ngày
+      await NotificationService.scheduleDailyMedication(
+        id: notifId,
+        title: 'Đến giờ uống thuốc',
+        body: '${med.name} • ${med.dosage}',
+        hour: _time!.hour,
+        minute: _time!.minute,
+      );
 
       if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lưu thất bại: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lưu thất bại: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -86,36 +89,51 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
           children: [
             Form(
               key: _formKey,
-              child: Column(children: [
-                TextFormField(
-                  controller: _name,
-                  decoration: const InputDecoration(labelText: 'Tên thuốc'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập tên thuốc' : null,
-                ),
-                TextFormField(
-                  controller: _dosage,
-                  decoration: const InputDecoration(labelText: 'Liều lượng (ví dụ 500mg)'),
-                ),
-                TextFormField(
-                  controller: _quantity,
-                  decoration: const InputDecoration(labelText: 'Số lượng'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: () async {
-                    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                    if (picked != null) setState(() => _time = picked);
-                  },
-                  icon: const Icon(Icons.access_time),
-                  label: Text(_time == null ? 'Chọn giờ uống' : 'Uống lúc ${_time!.format(context)}'),
-                ),
-              ]),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _name,
+                    decoration: const InputDecoration(labelText: 'Tên thuốc'),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nhập tên thuốc'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: _dosage,
+                    decoration: const InputDecoration(
+                      labelText: 'Liều lượng (ví dụ 500mg)',
+                    ),
+                  ),
+                  TextFormField(
+                    controller: _quantity,
+                    decoration: const InputDecoration(labelText: 'Số lượng'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (picked != null) setState(() => _time = picked);
+                    },
+                    icon: const Icon(Icons.access_time),
+                    label: Text(
+                      _time == null
+                          ? 'Chọn giờ uống'
+                          : 'Uống lúc ${_time!.format(context)}',
+                    ),
+                  ),
+                ],
+              ),
             ),
             const Spacer(),
             ElevatedButton(
               onPressed: _saving ? null : _save,
-              child: _saving ? const CircularProgressIndicator() : const Text('Lưu'),
+              child: _saving
+                  ? const CircularProgressIndicator()
+                  : const Text('Lưu'),
             ),
           ],
         ),

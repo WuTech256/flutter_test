@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medication.dart';
 import '../services/medication_service.dart';
+import '../services/notification_service.dart'; // ✅ Import
 import 'medication_form_screen.dart';
 
 class MedicationListScreen extends StatefulWidget {
@@ -19,9 +20,7 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Bạn chưa đăng nhập')),
-      );
+      return const Scaffold(body: Center(child: Text('Bạn chưa đăng nhập')));
     }
 
     return Scaffold(
@@ -46,12 +45,21 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: ListTile(
-                  title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${m.dosage} • ${m.quantity} viên\nLúc: ${m.time.format(context)}'),
+                  title: Text(
+                    m.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '${m.dosage} • ${m.quantity} viên\nLúc: ${m.time.format(context)}',
+                  ),
                   isThreeLine: true,
                   trailing: IconButton(
                     icon: isDeleting
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.delete, color: Colors.red),
                     onPressed: isDeleting
                         ? null
@@ -64,10 +72,20 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Xác nhận'),
-                                content: const Text('Bạn có chắc muốn xóa thuốc này?'),
+                                content: const Text(
+                                  'Bạn có chắc muốn xóa thuốc này?',
+                                ),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Hủy')),
-                                  TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Xóa')),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(false),
+                                    child: const Text('Hủy'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(true),
+                                    child: const Text('Xóa'),
+                                  ),
                                 ],
                               ),
                             );
@@ -75,16 +93,29 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
 
                             try {
                               setState(() => _deleting.add(m.id));
+
+                              // ✅ Hủy notification trước khi xóa
+                              if (m.notificationId != null) {
+                                await NotificationService.cancelNotification(
+                                  m.notificationId!,
+                                );
+                              }
+
                               await _service.deleteMedication(user.uid, m.id);
 
                               // Sau await: kiểm tra mounted trước khi thao tác với context/UI
                               if (!mounted) return;
-                              scaffold.showSnackBar(const SnackBar(content: Text('Đã xóa')));
+                              scaffold.showSnackBar(
+                                const SnackBar(content: Text('Đã xóa')),
+                              );
                             } catch (e) {
                               if (!mounted) return;
-                              scaffold.showSnackBar(SnackBar(content: Text('Xóa thất bại: $e')));
+                              scaffold.showSnackBar(
+                                SnackBar(content: Text('Xóa thất bại: $e')),
+                              );
                             } finally {
-                              if (mounted) setState(() => _deleting.remove(m.id));
+                              if (mounted)
+                                setState(() => _deleting.remove(m.id));
                             }
                           },
                   ),
@@ -95,9 +126,9 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MedicationFormScreen()),
-        ),
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MedicationFormScreen())),
         child: const Icon(Icons.add),
       ),
     );

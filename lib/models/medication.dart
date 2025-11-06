@@ -7,6 +7,7 @@ class Medication {
   final String dosage;
   final int quantity;
   final TimeOfDay time;
+  final int? notificationId; // ✅ Thêm field
 
   Medication({
     required this.id,
@@ -14,5 +15,6 @@ class Medication {
     required this.dosage,
     required this.quantity,
     required this.time,
+    this.notificationId,
   });
 }
