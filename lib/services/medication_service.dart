@@ -7,21 +7,19 @@ class MedicationService {
   final _db = FirebaseFirestore.instance;
 
   /// Thêm thuốc cho userId (UID)
-  Future<void> addMedication(
-    Medication med,
-    String userId,
-    int notificationId,
-  ) async {
-    final col = _db.collection('users').doc(userId).collection('medications');
-    final docRef = col.doc();
-    await docRef.set({
-      'id': docRef.id,
+  Future<void> addMedication(Medication med, String uid, int notifId) async {
+    final ref = _db
+        .collection('users')
+        .doc(uid)
+        .collection('medications')
+        .doc();
+    await ref.set({
       'name': med.name,
       'dosage': med.dosage,
       'quantity': med.quantity,
       'hour': med.time.hour,
       'minute': med.time.minute,
-      'notificationId': notificationId, // ✅ Lưu notificationId để hủy sau
+      'notificationId': notifId,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

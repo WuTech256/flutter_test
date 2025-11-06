@@ -4,7 +4,8 @@ import 'package:toanvuthinh/screens/change_password_screen.dart';
 import 'package:toanvuthinh/screens/location_screen.dart';
 import 'package:toanvuthinh/screens/fall_status_screen.dart';
 import 'package:toanvuthinh/screens/medication_list_screen.dart';
-import '../services/notification_service.dart'; // ✅ Import
+import '../services/notification_service.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -19,7 +20,6 @@ class HomeScreen extends StatelessWidget {
     required BuildContext context,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -97,7 +97,8 @@ class HomeScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (ctx) => FallStatusScreen(username: username),
+                          builder: (ctx) =>
+                              FallStatusScreen(username: username),
                         ),
                       );
                     },
@@ -110,8 +111,7 @@ class HomeScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (ctx) =>
-                              LocationScreen(username: username),
+                          builder: (ctx) => LocationScreen(username: username),
                         ),
                       );
                     },
@@ -119,13 +119,12 @@ class HomeScreen extends StatelessWidget {
                   ),
                   _buildFeature(
                     icon: Icons.medication,
-                    label: 'Thuoc',
+                    label: 'Thuốc',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (ctx) =>
-                              MedicationListScreen(),
+                          builder: (ctx) => const MedicationListScreen(),
                         ),
                       );
                     },
@@ -154,13 +153,17 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          ElevatedButton(
-          onPressed: () => NotificationService.showInstantNotification(
-            title: '⚠️ Cảnh báo ngã lần',
-            body: 'vẫn đang trong trạng thái ngã!',
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: ElevatedButton(
+              onPressed: () => NotificationService.scheduleAfterSeconds(
+                title: 'Test sau 10s',
+                body: 'Thông báo thử',
+                seconds: 10,
+              ),
+              child: const Text('Test alarm 10s'),
+            ),
           ),
-          child: const Text('Test alarm 10s'),
-        )
         ],
       ),
     );

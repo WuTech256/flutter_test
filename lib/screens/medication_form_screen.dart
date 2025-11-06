@@ -36,12 +36,13 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     if (!_formKey.currentState!.validate() || _time == null) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập')));
+      }
       return;
     }
-
     setState(() => _saving = true);
 
     final med = Medication(
@@ -53,27 +54,23 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     );
 
     try {
-      final notifId = DateTime.now().millisecondsSinceEpoch % 2147483647;
-
-      // ✅ Truyền notificationId vào service
+      final notifId = DateTime.now().microsecondsSinceEpoch & 0x7FFFFFFF;
       await _service.addMedication(med, user.uid, notifId);
-
-      // Lịch hàng ngày
       await NotificationService.scheduleDailyMedication(
         id: notifId,
-        title: 'Đến giờ uống thuốc',
-        body: '${med.name} • ${med.dosage}',
-        hour: _time!.hour,
-        minute: _time!.minute,
+        title: 'Nhắc uống thuốc: ${med.name}',
+        body: 'Liều: ${med.dosage} • ${med.quantity} viên',
+        hour: med.time.hour,
+        minute: med.time.minute,
       );
-
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lưu thất bại: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
