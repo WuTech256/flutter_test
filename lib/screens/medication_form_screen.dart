@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medication.dart';
 import '../services/medication_service.dart';
 import '../services/notification_service.dart';
+import 'medication_list_screen.dart';
 
 class MedicationFormScreen extends StatefulWidget {
   const MedicationFormScreen({super.key});
@@ -60,7 +61,9 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
         minute: med.time.minute,
       );
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MedicationListScreen()),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

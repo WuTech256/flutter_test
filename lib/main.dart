@@ -91,16 +91,20 @@ class MyApp extends StatelessWidget {
             final username = user.email?.split('@').first ?? user.uid;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               final token = await FirebaseMessaging.instance.getToken();
+              final userRef = FirebaseDatabase.instance.ref(
+                'users/${user.uid}',
+              );
               if (token != null) {
-                await FirebaseDatabase.instance.ref('users/${user.uid}').update(
-                  {'fcmToken': token, 'username': username},
-                );
+                await userRef.update({'fcmToken': token, 'username': username});
               }
               FirebaseMessaging.instance.onTokenRefresh.listen((t) async {
-                await FirebaseDatabase.instance.ref('users/${user.uid}').update(
-                  {'fcmToken': t},
-                );
+                await userRef.update({'fcmToken': t});
               });
+
+              // Subscribe topic UID (nhắc thuốc) & username (fall nếu khác)
+              await FirebaseMessaging.instance.subscribeToTopic(user.uid);
+              await FirebaseMessaging.instance.subscribeToTopic(username);
+
               final meds = await MedicationService().fetchAll(user.uid);
               for (final m in meds) {
                 if (m.notificationId != null) {
