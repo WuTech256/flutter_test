@@ -52,8 +52,8 @@
         <!-- ✅ Thêm tools:replace để override exported -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
-            android:foregroundServiceType="dataSync"
-            android:exported="true"
+            android:foregroundServiceType="location"
+            android:exported="false"
             tools:replace="android:exported" />
 
         <meta-data

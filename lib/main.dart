@@ -54,24 +54,7 @@ Future<void> _bgHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  tz.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Asia/Ho_Chi_Minh'));
-  await NotificationService.init();
-
-  // FCM setup
-  FirebaseMessaging.onBackgroundMessage(_fcmBackground);
-  FirebaseMessaging.onBackgroundMessage(_bgHandler);
-  final messaging = FirebaseMessaging.instance;
-
-  // Android 13+ permission & iOS permission
-  await messaging.requestPermission(alert: true, badge: true, sound: true);
-
-  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-  await _flutterLocalNotifications.initialize(
-    const InitializationSettings(android: androidSettings),
-  );
-
+  await initializeFallBackgroundService();
   runApp(const MyApp());
 }
 
@@ -106,14 +89,12 @@ class MyApp extends StatelessWidget {
             final user = snapshot.data!;
             final username = user.email?.split('@').first ?? user.uid;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
-              FallDetectionBackgroundService.initialize(username);
               final token = await FirebaseMessaging.instance.getToken();
               if (token != null) {
                 await FirebaseDatabase.instance.ref('users/${user.uid}').update(
                   {'fcmToken': token, 'username': username},
                 );
               }
-              // FIX: dùng instance.onTokenRefresh
               FirebaseMessaging.instance.onTokenRefresh.listen((t) async {
                 await FirebaseDatabase.instance.ref('users/${user.uid}').update(
                   {'fcmToken': t},
