@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/services.dart'; // thêm để dùng PlatformException
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
@@ -53,24 +54,46 @@ class NotificationService {
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduled,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'meds',
-          'Medication Reminders',
-          importance: Importance.max,
-          priority: Priority.high,
+
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'meds',
+            'Medication Reminders',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
         ),
-      ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+        androidAllowWhileIdle: true,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } on PlatformException catch (e) {
+      // Nếu vẫn lỗi exact alarms (Android 13), fallback: gửi notification tức thì (ít tối ưu)
+      if (e.code == 'exact_alarms_not_permitted') {
+        await _plugin.show(
+          id,
+          title,
+          body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'meds_fallback',
+              'Medication Reminders Fallback',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      } else {
+        rethrow;
+      }
+    }
   }
 
   static Future<void> cancelNotification(int id) async {
