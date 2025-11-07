@@ -54,6 +54,8 @@ Future<void> _bgHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.init();
   await initializeFallBackgroundService();
   runApp(const MyApp());
 }
@@ -62,7 +64,6 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    // Đăng ký listener foreground FCM
     FirebaseMessaging.onMessage.listen((msg) async {
       final n = msg.notification;
       if (n != null) {
