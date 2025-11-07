@@ -1,61 +1,51 @@
 // lib/services/medication_service.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart'; // thêm để dùng TimeOfDay
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/material.dart';
 import '../models/medication.dart';
 
 class MedicationService {
-  final _db = FirebaseFirestore.instance;
+  final _db = FirebaseDatabase.instance;
 
-  DatabaseReference _userRef(String uid) =>
-      FirebaseDatabase.instance.ref('medications/$uid');
+  DatabaseReference _userMedRef(String uid) =>
+      _db.ref('users/$uid/medications');
 
   /// Thêm thuốc cho userId (UID)
   Future<void> addMedication(Medication med, String uid, int notifId) async {
-    await FirebaseDatabase.instance.ref('users/$uid/medications').push().set({
+    final ref = _userMedRef(uid).push();
+    await ref.set({
       'name': med.name,
       'dosage': med.dosage,
       'quantity': med.quantity,
       'hour': med.time.hour,
       'minute': med.time.minute,
-      'notificationId': notifId, // tùy chọn: có thể bỏ
+      'notificationId': notifId, // có thể bỏ nếu không dùng
     });
   }
 
   /// Lấy stream danh sách thuốc theo userId
-  Stream<List<Medication>> streamMedications(String userId) {
-    return _userRef(userId).onValue.map((event) {
-      final data = event.snapshot.value;
-      if (data is Map) {
-        return data.entries
-            .map(
-              (e) => Medication.fromMap(
-                e.key,
-                Map<dynamic, dynamic>.from(e.value),
-              ),
-            )
-            .toList();
+  Stream<List<Medication>> streamMedications(String uid) {
+    return _userMedRef(uid).onValue.map((event) {
+      final snap = event.snapshot;
+      if (!snap.exists) return <Medication>[];
+      final List<Medication> list = [];
+      for (final child in snap.children) {
+        final data = child.value;
+        if (data is Map) {
+          list.add(Medication.fromMap(child.key!, data));
+        }
       }
-      return <Medication>[];
+      // Sort theo giờ
+      list.sort((a, b) {
+        final ta = a.time.hour * 60 + a.time.minute;
+        final tb = b.time.hour * 60 + b.time.minute;
+        return ta.compareTo(tb);
+      });
+      return list;
     });
   }
 
-  Future<List<Medication>> fetchAll(String uid) async {
-    final snap = await _userRef(uid).get();
-    final data = snap.value;
-    if (data is Map) {
-      return data.entries
-          .map(
-            (e) =>
-                Medication.fromMap(e.key, Map<dynamic, dynamic>.from(e.value)),
-          )
-          .toList();
-    }
-    return [];
-  }
-
   Future<void> deleteMedication(String uid, Medication med) async {
-    await _userRef(uid).child(med.id).remove();
+    await _userMedRef(uid).child(med.id).remove();
   }
 }
 

@@ -53,7 +53,6 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     try {
       final notifId = DateTime.now().microsecondsSinceEpoch & 0x7FFFFFFF;
       await _service.addMedication(med, user.uid, notifId);
-      // BỎ gọi NotificationService.scheduleDailyMedication (server sẽ gửi FCM)
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MedicationListScreen()),
