@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medication.dart';
 import '../services/medication_service.dart';
-import '../services/notification_service.dart';
+import '../services/notification_service.dart'; // vẫn giữ nếu dùng cho instant khác
 import 'medication_list_screen.dart';
 
 class MedicationFormScreen extends StatefulWidget {
@@ -53,13 +53,7 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     try {
       final notifId = DateTime.now().microsecondsSinceEpoch & 0x7FFFFFFF;
       await _service.addMedication(med, user.uid, notifId);
-      await NotificationService.scheduleDailyMedication(
-        id: notifId,
-        title: 'Nhắc uống thuốc: ${med.name}',
-        body: 'Liều: ${med.dosage} • ${med.quantity} viên',
-        hour: med.time.hour,
-        minute: med.time.minute,
-      );
+      // BỎ gọi NotificationService.scheduleDailyMedication (server sẽ gửi FCM)
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MedicationListScreen()),

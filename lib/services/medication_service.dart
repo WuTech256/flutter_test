@@ -12,8 +12,14 @@ class MedicationService {
 
   /// Thêm thuốc cho userId (UID)
   Future<void> addMedication(Medication med, String uid, int notifId) async {
-    final ref = _userRef(uid).push();
-    await ref.set(med.copyWith(notificationId: notifId).toMap());
+    await FirebaseDatabase.instance.ref('users/$uid/medications').push().set({
+      'name': med.name,
+      'dosage': med.dosage,
+      'quantity': med.quantity,
+      'hour': med.time.hour,
+      'minute': med.time.minute,
+      'notificationId': notifId, // tùy chọn: có thể bỏ
+    });
   }
 
   /// Lấy stream danh sách thuốc theo userId

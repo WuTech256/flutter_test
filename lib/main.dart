@@ -68,9 +68,9 @@ class MyApp extends StatelessWidget {
       final n = msg.notification;
       if (n != null) {
         await NotificationService.showInstantNotification(
+          id: DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF,
           title: n.title ?? 'Thông báo',
           body: n.body ?? '',
-          id: 1000,
         );
       }
     });
@@ -101,22 +101,11 @@ class MyApp extends StatelessWidget {
                 await userRef.update({'fcmToken': t});
               });
 
-              // Subscribe topic UID (nhắc thuốc) & username (fall nếu khác)
+              // Topic cho fall (username) & medication (uid)
               await FirebaseMessaging.instance.subscribeToTopic(user.uid);
               await FirebaseMessaging.instance.subscribeToTopic(username);
 
-              final meds = await MedicationService().fetchAll(user.uid);
-              for (final m in meds) {
-                if (m.notificationId != null) {
-                  await NotificationService.scheduleDailyMedication(
-                    id: m.notificationId!,
-                    title: 'Nhắc uống thuốc: ${m.name}',
-                    body: 'Liều: ${m.dosage} • ${m.quantity} viên',
-                    hour: m.time.hour,
-                    minute: m.time.minute,
-                  );
-                }
-              }
+              // BỎ toàn bộ scheduleDailyMedication local
             });
             return const HomeScreen();
           }
