@@ -75,10 +75,10 @@ class MyApp extends StatelessWidget {
       }
     });
     return MaterialApp(
-      title: 'FlutterChat',
+      title: 'NBK Care',
       debugShowCheckedModeBanner: false,
       theme: ThemeData().copyWith(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF37015C)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 34, 1, 56)),
       ),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),

@@ -12,47 +12,43 @@ class HomeScreen extends StatelessWidget {
   void _logout() => FirebaseAuth.instance.signOut();
 
   Widget _feature({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required BuildContext context,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cs.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(2, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: cs.onPrimaryContainer, size: 42),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: cs.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-          ],
-        ),
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+  required BuildContext context,
+}) {
+  final cs = Theme.of(context).colorScheme;
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: cs.primaryContainer,
       ),
-    );
-  }
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 40),
+          const SizedBox(height: 8),
+
+          // 🔧 Phần text này là phần mình sửa
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,   // giảm kích thước chữ
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +58,10 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: cs.primary,
       appBar: AppBar(
-        title: const Text('Trang chủ'),
+        title: const Text('Trang chủ', style: const TextStyle(
+              fontSize: 20,   // giảm kích thước chữ
+              fontWeight: FontWeight.w600,
+            ),),
         backgroundColor: cs.primary,
         foregroundColor: cs.onPrimary,
         elevation: 0,
@@ -74,7 +73,7 @@ class HomeScreen extends StatelessWidget {
             'Xin chào, $username 👋',
             style: TextStyle(
               color: cs.onPrimary,
-              fontSize: 20,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -141,17 +140,17 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: ElevatedButton(
-              onPressed: () => NotificationService.showInstantNotification(
-                title: 'Test',
-                body: 'Thông báo thử',
-                id: 1234,
-              ),
-              child: const Text('Test notify'),
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.only(bottom: 20),
+          //   child: ElevatedButton(
+          //     onPressed: () => NotificationService.showInstantNotification(
+          //       title: 'Test',
+          //       body: 'Thông báo thử',
+          //       id: 1234,
+          //     ),
+          //     child: const Text('Test notify'),
+          //   ),
+          // ),
         ],
       ),
     );
