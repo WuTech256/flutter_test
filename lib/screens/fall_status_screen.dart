@@ -70,7 +70,10 @@ class _FallStatusScreenState extends State<FallStatusScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Giám sát trạng thái ngã'),
+        title: const Text('Giám sát trạng thái ngã',
+            style: TextStyle(
+              fontSize: 15,),
+              ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: color,

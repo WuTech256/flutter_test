@@ -86,7 +86,9 @@ class _LocationScreenState extends State<LocationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Vị trí của ${widget.username}'),
+        title: Text('Vị trí của ${widget.username}', style: const TextStyle(
+              fontSize: 15,),
+              ),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
       ),

@@ -78,7 +78,10 @@ class MyApp extends StatelessWidget {
       title: 'NBK Care',
       debugShowCheckedModeBanner: false,
       theme: ThemeData().copyWith(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 34, 1, 56)),
+        colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF1877F2),
+        brightness: Brightness.light,
+      ),
       ),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),

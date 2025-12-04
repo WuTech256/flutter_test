@@ -71,7 +71,7 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm thuốc')),
+      appBar: AppBar(title: const Text('Thêm thuốc', style: TextStyle(fontSize: 18))),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

@@ -22,7 +22,7 @@ class _MedicationListScreenState extends State<MedicationListScreen> {
       return const Scaffold(body: Center(child: Text('Bạn chưa đăng nhập')));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Nhắc uống thuốc')),
+      appBar: AppBar(title: const Text('Nhắc uống thuốc', style: TextStyle(fontSize: 18))),
       body: StreamBuilder<List<Medication>>(
         stream: _service.streamMedications(user.uid),
         builder: (context, snap) {
