@@ -4,6 +4,7 @@ import 'package:toanvuthinh/screens/change_password_screen.dart';
 import 'package:toanvuthinh/screens/location_screen.dart';
 import 'package:toanvuthinh/screens/fall_status_screen.dart';
 import 'package:toanvuthinh/screens/medication_list_screen.dart';
+import 'package:toanvuthinh/screens/health_screen.dart';
 import '../services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -119,6 +120,18 @@ class HomeScreen extends StatelessWidget {
                     ),
                     context: context,
                   ),
+                  _feature(
+                    icon: Icons.monitor_weight,
+                    label: 'Sức khỏe',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => const HealthScreen(),
+                      ),
+                    ),
+                    context: context,
+                  ),
+
                   _feature(
                     icon: Icons.password,
                     label: 'Đổi mật khẩu',
