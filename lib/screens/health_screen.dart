@@ -16,10 +16,12 @@ class _HealthScreenState extends State<HealthScreen> {
 
   bool _isEditing = false;
 
-  double? _weight;
-  double? _height;
-  double _bmi = 0;
-  String _note = "";
+  // form controller (chỉ thay đổi trên UI, không đụng vào dữ liệu gốc)
+  final _weightCtrl = TextEditingController();
+  final _heightCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+
+  double _bmiPreview = 0;
 
   double calcBMI(double w, double h) {
     double m = h / 100;
@@ -27,11 +29,16 @@ class _HealthScreenState extends State<HealthScreen> {
   }
 
   @override
+  void dispose() {
+    _weightCtrl.dispose();
+    _heightCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return const Scaffold(body: Center(child: Text("Chưa đăng nhập")));
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -41,32 +48,26 @@ class _HealthScreenState extends State<HealthScreen> {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => setState(() => _isEditing = true),
-            ),
+            )
         ],
       ),
       body: StreamBuilder<HealthStatus?>(
-        stream: _service.streamLatest(user.uid),
+        stream: _service.streamLatest(user!.uid),
         builder: (ctx, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (!snap.hasData) {
+            return const Center(child: Text("Chưa có dữ liệu"));
           }
 
-          final h = snap.data;
+          final health = snap.data!;
 
-          if (!_isEditing) {
-            // VIEW MODE
-            if (h == null) {
-              return const Center(child: Text("Chưa có dữ liệu sức khỏe"));
-            }
-            return _buildView(h);
-          }
+          if (!_isEditing) return _buildView(health);
 
-          // EDIT MODE → load dữ liệu vào form 1 lần
-          if (h != null && _weight == null && _height == null && _note.isEmpty) {
-            _weight = h.weight;
-            _height = h.height;
-            _bmi = h.bmi;
-            _note = h.note;
+          // LOAD FORM 1 LẦN DUY NHẤT
+          if (_weightCtrl.text.isEmpty) {
+            _weightCtrl.text = health.weight.toString();
+            _heightCtrl.text = health.height.toString();
+            _noteCtrl.text = health.note;
+            _bmiPreview = health.bmi;
           }
 
           return _buildForm(user.uid);
@@ -75,7 +76,7 @@ class _HealthScreenState extends State<HealthScreen> {
     );
   }
 
-  // ---------------------- VIEW MODE -------------------
+  // ==================== VIEW MODE =====================
   Widget _buildView(HealthStatus h) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -85,8 +86,7 @@ class _HealthScreenState extends State<HealthScreen> {
           Text("Chiều cao: ${h.height} cm", style: viewStyle),
           Text("BMI: ${h.bmi.toStringAsFixed(1)}", style: viewStyle),
           const SizedBox(height: 10),
-          const Text("Ghi chú:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Ghi chú:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           Text(h.note, style: const TextStyle(fontSize: 16)),
         ],
       ),
@@ -95,7 +95,7 @@ class _HealthScreenState extends State<HealthScreen> {
 
   final viewStyle = const TextStyle(fontSize: 18, fontWeight: FontWeight.w500);
 
-  // ---------------------- EDIT MODE -------------------
+  // ==================== EDIT MODE =====================
   Widget _buildForm(String uid) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -104,41 +104,46 @@ class _HealthScreenState extends State<HealthScreen> {
         child: ListView(
           children: [
             TextFormField(
-              initialValue: _weight?.toString() ?? "",
+              controller: _weightCtrl,
               decoration: const InputDecoration(labelText: "Cân nặng (kg)"),
               keyboardType: TextInputType.number,
               validator: (v) => v!.isEmpty ? "Nhập cân nặng" : null,
               onChanged: (v) {
-                _weight = double.tryParse(v);
-                if (_weight != null && _height != null) {
-                  setState(() => _bmi = calcBMI(_weight!, _height!));
+                final w = double.tryParse(_weightCtrl.text);
+                final h = double.tryParse(_heightCtrl.text);
+                if (w != null && h != null) {
+                  setState(() => _bmiPreview = calcBMI(w, h));
                 }
               },
             ),
             TextFormField(
-              initialValue: _height?.toString() ?? "",
+              controller: _heightCtrl,
               decoration: const InputDecoration(labelText: "Chiều cao (cm)"),
               keyboardType: TextInputType.number,
               validator: (v) => v!.isEmpty ? "Nhập chiều cao" : null,
               onChanged: (v) {
-                _height = double.tryParse(v);
-                if (_weight != null && _height != null) {
-                  setState(() => _bmi = calcBMI(_weight!, _height!));
+                final w = double.tryParse(_weightCtrl.text);
+                final h = double.tryParse(_heightCtrl.text);
+                if (w != null && h != null) {
+                  setState(() => _bmiPreview = calcBMI(w, h));
                 }
               },
             ),
             const SizedBox(height: 20),
+
             Text(
-              "BMI: ${_bmi.toStringAsFixed(1)}",
+              "BMI: ${_bmiPreview.toStringAsFixed(1)}",
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 20),
+
             TextFormField(
-              initialValue: _note,
+              controller: _noteCtrl,
               maxLines: 4,
               decoration: const InputDecoration(labelText: "Lời khuyên bác sĩ"),
-              onChanged: (v) => _note = v,
             ),
+
             const SizedBox(height: 30),
 
             // SAVE BUTTON
@@ -146,45 +151,49 @@ class _HealthScreenState extends State<HealthScreen> {
               onPressed: () async {
                 if (!_formKey.currentState!.validate()) return;
 
-                final h = HealthStatus(
-                  weight: _weight!,
-                  height: _height!,
-                  bmi: _bmi,
-                  note: _note,
+                final w = double.parse(_weightCtrl.text);
+                final h = double.parse(_heightCtrl.text);
+
+                final newData = HealthStatus(
+                  weight: w,
+                  height: h,
+                  bmi: calcBMI(w, h),
+                  note: _noteCtrl.text,
                 );
 
-                await _service.saveHealth(uid, h);
+                await _service.saveHealth(uid, newData);
 
                 if (mounted) {
                   setState(() {
                     _isEditing = false;
-                    _weight = null;
-                    _height = null;
-                    _bmi = 0;
-                    _note = "";
+
+                    // Reset để lần sau không load lại dữ liệu cũ
+                    _weightCtrl.clear();
+                    _heightCtrl.clear();
+                    _noteCtrl.clear();
+                    _bmiPreview = 0;
                   });
 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Đã lưu")),
+                    const SnackBar(content: Text("Đã lưu thành công")),
                   );
                 }
               },
               child: const Text("Lưu"),
             ),
 
-            // CANCEL BUTTON
             TextButton(
               onPressed: () {
                 setState(() {
                   _isEditing = false;
-                  _weight = null;
-                  _height = null;
-                  _bmi = 0;
-                  _note = "";
+                  _weightCtrl.clear();
+                  _heightCtrl.clear();
+                  _noteCtrl.clear();
+                  _bmiPreview = 0;
                 });
               },
               child: const Text("Hủy"),
-            ),
+            )
           ],
         ),
       ),

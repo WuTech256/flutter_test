@@ -1,13 +1,12 @@
-// lib/screens/medication_form_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medication.dart';
 import '../services/medication_service.dart';
-import '../services/notification_service.dart'; // vẫn giữ nếu dùng cho instant khác
 import 'medication_list_screen.dart';
 
 class MedicationFormScreen extends StatefulWidget {
   const MedicationFormScreen({super.key});
+
   @override
   State<MedicationFormScreen> createState() => _MedicationFormScreenState();
 }
@@ -18,6 +17,7 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
   final _dosage = TextEditingController();
   final _quantity = TextEditingController(text: '1');
   TimeOfDay? _time;
+
   final _service = MedicationService();
   bool _saving = false;
 
@@ -31,38 +31,39 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _time == null) return;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập')));
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập')));
       return;
     }
+
     setState(() => _saving = true);
 
+    final int notifId =
+        DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF;
+
     final med = Medication(
-      id: '',
+      id: '', // ID sẽ được Firebase tự tạo
       name: _name.text.trim(),
       dosage: _dosage.text.trim(),
       quantity: int.tryParse(_quantity.text) ?? 1,
       time: _time!,
+      notificationId: notifId,
     );
 
     try {
-      final notifId = DateTime.now().microsecondsSinceEpoch & 0x7FFFFFFF;
       await _service.addMedication(med, user.uid, notifId);
+
       if (!mounted) return;
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MedicationListScreen()),
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -71,7 +72,7 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm thuốc', style: TextStyle(fontSize: 18))),
+      appBar: AppBar(title: const Text('Thêm thuốc')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -96,18 +97,15 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text(
-                    _time == null
-                        ? 'Chưa chọn giờ'
-                        : 'Giờ: ${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
-                  ),
+                  Text(_time == null
+                      ? 'Chưa chọn giờ'
+                      : 'Giờ: ${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}'),
                   const Spacer(),
                   TextButton(
                     onPressed: () async {
-                      final now = TimeOfDay.now();
                       final picked = await showTimePicker(
                         context: context,
-                        initialTime: now,
+                        initialTime: TimeOfDay.now(),
                       );
                       if (picked != null) setState(() => _time = picked);
                     },

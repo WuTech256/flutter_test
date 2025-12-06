@@ -1,4 +1,3 @@
-// lib/models/medication.dart
 import 'package:flutter/material.dart';
 
 class Medication {
@@ -19,28 +18,28 @@ class Medication {
   });
 
   factory Medication.fromMap(String id, Map<dynamic, dynamic> data) {
-    final hour = (data['hour'] ?? 0) as int;
-    final minute = (data['minute'] ?? 0) as int;
     return Medication(
       id: id,
-      name: (data['name'] ?? '') as String,
-      dosage: (data['dosage'] ?? '') as String,
-      quantity: (data['quantity'] ?? 0) as int,
-      time: TimeOfDay(hour: hour, minute: minute),
-      notificationId: data['notificationId'] is int
-          ? data['notificationId'] as int
-          : null,
+      name: data['name'] ?? '',
+      dosage: data['dosage'] ?? '',
+      quantity: data['quantity'] ?? 1,
+      time: TimeOfDay(
+        hour: data['hour'] ?? 0,
+        minute: data['minute'] ?? 0,
+      ),
+      notificationId: data['notificationId'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'name': name,
       'dosage': dosage,
       'quantity': quantity,
       'hour': time.hour,
       'minute': time.minute,
-      if (notificationId != null) 'notificationId': notificationId,
+      'notificationId': notificationId,
     };
   }
 }
